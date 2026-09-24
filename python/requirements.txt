@@ -1,0 +1,42 @@
+# ===== CORE DEPENDENCIES =====
+# Data processing and numerical computation
+numpy==1.26.4
+scipy==1.12.0
+pandas==2.2.1
+
+# Database connectivity
+psycopg2-binary==2.9.9
+
+# API clients
+requests==2.31.0
+python-dotenv==1.0.1
+
+# ===== RISK QUANTIFICATION =====
+# PyFair for FAIR methodology
+pyfair==0.1.0a10
+
+# ===== AI/ML STACK =====
+# Embeddings and vector storage
+sentence-transformers==2.5.1
+chromadb==0.4.24
+
+# LLM orchestration
+langchain==0.1.13
+langchain-community==0.0.29
+langgraph==0.0.26
+langchain-ollama==0.0.1  # For local Llama 3.1 8B
+langchain-anthropic==0.1.6  # For Claude API fallback
+
+# ===== OPTIMIZATION =====
+PuLP==2.8.0
+
+# ===== UTILITIES =====
+pydantic==2.6.4  # Type validation
+tenacity==8.2.3  # Retry logic
+loguru==0.7.2  # Structured logging
+
+# ===== PHASE 2 ROADMAP (not in MVP) =====
+# matplotlib==3.8.3  # For advanced visualization
+# plotly==5.19.0  # Interactive charts
+# shap==0.44.1  # ML explainability
+# prometheus-client==0.20.0  # Monitoring
