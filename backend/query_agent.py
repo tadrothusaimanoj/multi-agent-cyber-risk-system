@@ -12,10 +12,21 @@ Guarantees:
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, timezone
 import re
+import os
 import numpy as np
 from sqlalchemy.orm import Session
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+
+from dotenv import load_dotenv
+load_dotenv(".env.local")
+
+try:
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    from langchain_core.messages import SystemMessage, HumanMessage
+    HAS_LANGCHAIN = True
+except ImportError:
+    HAS_LANGCHAIN = False
 
 from backend.models import AssetModel, FindingModel, RemediationModel, OptimizationRunModel, AuditLogModel
 
@@ -262,38 +273,67 @@ class NaturalLanguageQueryAgent:
     ) -> str:
         """
         Synthesizes a response strictly citing retrieved IDs without speculative claims.
+        Uses Google Gemini via Langchain if configured, else falls back to list formatting.
         """
-        lower_q = query.lower()
-
-        lower_q = query.lower()
-
-        # General synthesizer
+        # 1. Format the retrieved context
         findings_cited = [m for m in retrieved if m["type"] == "finding"]
         remediations_cited = [m for m in retrieved if m["type"] == "remediation"]
         assets_cited = [m for m in retrieved if m["type"] == "asset"]
         audit_cited = [m for m in retrieved if m["type"] == "audit_log"]
 
-        lines = [f"Regarding **'{query}'**, the following verified records from our GRC risk register provide direct context:\n"]
-
+        context_lines = []
         if findings_cited:
-            lines.append("### Key Findings Cited:")
+            context_lines.append("### Key Findings:")
             for f in findings_cited:
-                lines.append(f"- **`[{f['id']}]` {f['title']}**: Quantified Risk **${f.get('risk_usd', 0):,.0f}**, Severity `{f.get('severity', 'medium').upper()}` on Asset `[{f.get('asset_id', 'N/A')}]`.")
-
+                context_lines.append(f"- [{f['id']}] {f['title']}: Risk ${f.get('risk_usd', 0):,.0f}, Severity {f.get('severity', 'medium').upper()} on Asset {f.get('asset_id', 'N/A')}.")
         if remediations_cited:
-            lines.append("\n### Candidate Security Controls Cited:")
+            context_lines.append("\n### Candidate Security Controls:")
             for r in remediations_cited:
-                lines.append(f"- **`[{r['id']}]` {r['title']}**: Cost **${r.get('cost', 0):,.0f}**, Risk Reduction **${r.get('risk_reduction_usd', 0):,.0f}** (ROI: `{r.get('roi', 0):.2f}x`, NIST: `{r.get('nist_control_id', 'PR.IP-12')}`).")
-
+                context_lines.append(f"- [{r['id']}] {r['title']}: Cost ${r.get('cost', 0):,.0f}, Reduction ${r.get('risk_reduction_usd', 0):,.0f} (ROI: {r.get('roi', 0):.2f}x).")
         if assets_cited:
-            lines.append("\n### Target Assets Cited:")
+            context_lines.append("\n### Target Assets:")
             for a in assets_cited:
-                lines.append(f"- **`[{a['id']}]` {a['title']}**: Business Unit `{a.get('business_unit', 'Corporate')}`, Asset Value **${a.get('value', 0):,.0f}**.")
-
+                context_lines.append(f"- [{a['id']}] {a['title']}: Unit {a.get('business_unit', 'Corporate')}, Value ${a.get('value', 0):,.0f}.")
         if audit_cited:
-            lines.append("\n### Relevant Audit Trail Entries:")
+            context_lines.append("\n### Relevant Audit Trail:")
             for al in audit_cited:
-                lines.append(f"- **`[{al['id']}]`**: {al.get('details', '')}")
+                context_lines.append(f"- [{al['id']}]: {al.get('details', '')}")
+        
+        context_str = "\n".join(context_lines)
 
+        # 2. Attempt to use Gemini LLM
+        api_key = os.getenv("AI_API_KEY")
+        if HAS_LANGCHAIN and api_key:
+            try:
+                llm = ChatGoogleGenerativeAI(
+                    model="gemini-3.8-flash", 
+                    google_api_key=api_key,
+                    temperature=0.2
+                )
+                
+                system_prompt = (
+                    "You are CyberGuard AI, an expert Executive Cyber Risk Advisor. "
+                    "You must answer the user's query based ONLY on the provided Database Context below. "
+                    "If the context does not contain the answer, say you don't know based on the current risk register. "
+                    "Always explicitly cite the IDs (e.g., [FND-123], [ACT-004]) from the context in your response. "
+                    "Keep your response professional, concise, and structured."
+                )
+                
+                user_prompt = f"User Query: {query}\n\nDatabase Context:\n{context_str}"
+                
+                messages = [
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content=user_prompt)
+                ]
+                
+                response = llm.invoke(messages)
+                return response.content + "\n\n*Note: Answer generated by Google Gemini using retrieved RAG context.*"
+                
+            except Exception as e:
+                # If LLM fails (e.g., rate limit, invalid key), fallback to string synthesis
+                print(f"LLM Generation failed: {e}")
+        
+        # 3. Fallback: string formatting
+        lines = [f"Regarding **'{query}'**, the following verified records from our GRC risk register provide direct context:\n", context_str]
         lines.append("\n*Note: This query agent operates in strictly read-only mode and cites immutable records from the underlying database.*")
         return "\n".join(lines)

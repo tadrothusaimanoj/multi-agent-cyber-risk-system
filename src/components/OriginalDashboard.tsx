@@ -1224,7 +1224,7 @@ import ReactMarkdown from 'react-markdown';
           </nav>
 
           {/* Tab 1: Executive Dashboard View */}
-          {(activeTab === 'dashboard' || activeTab === 'optimizer') && (
+          {(activeTab === 'dashboard') && (
             <div className="space-y-8">
               {/* Executive Headline Metric Cards */}
               <section className="grid grid-cols-1 md:grid-cols-4 gap-5">
@@ -1449,10 +1449,10 @@ import ReactMarkdown from 'react-markdown';
                   </div>
                 </div>
 
-                {/* 2-Column RAG Layout */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Left Column: Chat Area */}
-                  <div className="lg:col-span-2 space-y-4">
+                {/* 1-Column RAG Layout */}
+                <div className="grid grid-cols-1 gap-6">
+                  {/* Chat Area */}
+                  <div className="space-y-4">
                     {/* Chat Message Stream */}
                     <div className="space-y-4 max-h-96 overflow-y-auto pr-2 bg-zinc-950/60 p-4 rounded-xl border border-zinc-800">
                       {chatMessages.map((msg, mIdx) => (
@@ -1554,59 +1554,15 @@ import ReactMarkdown from 'react-markdown';
                     </form>
                   </div>
 
-                  {/* Right Column: Citation Detail Panel */}
-                  <div className="lg:col-span-1 bg-zinc-950/80 border border-zinc-800 rounded-xl p-5 shadow-inner min-h-[300px] flex flex-col relative overflow-hidden">
-                    <div className="flex items-center gap-2 border-b border-zinc-800 pb-3 mb-4">
-                      <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      <h3 className="text-sm font-semibold text-zinc-200">Citation Inspector</h3>
-                    </div>
-                    
-                    {activeCitation ? (
-                      <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                        <div>
-                          <span className="text-[10px] uppercase text-zinc-500 font-bold block mb-1">Record ID</span>
-                          <span className="font-mono text-sm text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">{activeCitation.id}</span>
-                        </div>
-                        <div>
-                          <span className="text-[10px] uppercase text-zinc-500 font-bold block mb-1">Record Type</span>
-                          <span className="capitalize text-xs font-medium text-zinc-300">{activeCitation.type.replace('_', ' ')}</span>
-                        </div>
-                        <div>
-                          <span className="text-[10px] uppercase text-zinc-500 font-bold block mb-1">Title</span>
-                          <span className="text-sm font-medium text-white leading-snug block">{activeCitation.title}</span>
-                        </div>
-                        {activeCitation.details && (
-                          <div>
-                            <span className="text-[10px] uppercase text-zinc-500 font-bold block mb-1">Extracted Details</span>
-                            <div className="text-xs text-zinc-400 leading-relaxed bg-zinc-900 p-3 rounded-lg border border-zinc-800">
-                              {activeCitation.details}
-                            </div>
-                          </div>
-                        )}
-                        <div>
-                          <span className="text-[10px] uppercase text-zinc-500 font-bold block mb-1">Semantic Match Score</span>
-                          <div className="w-full bg-zinc-800 rounded-full h-1.5 mt-1.5">
-                            <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: `${Math.min(100, activeCitation.relevance_score * 100)}%` }}></div>
-                          </div>
-                          <span className="text-[10px] font-mono text-zinc-500 mt-1 block">{(activeCitation.relevance_score * 100).toFixed(1)}% relevance</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex-1 flex flex-col items-center justify-center text-center opacity-50">
-                        <svg className="w-8 h-8 text-zinc-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                        <span className="text-sm font-medium text-zinc-400">No Citation Selected</span>
-                        <span className="text-xs text-zinc-500 mt-1 max-w-[200px]">Click a citation pill in the chat to view the underlying database record.</span>
-                      </div>
-                    )}
-                  </div>
+
                 </div>
               </section>
+            </div>
+          )}
 
+          {/* Tab X: Security Investment Optimizer */}
+          {(activeTab === 'optimizer') && (
+            <div className="space-y-8">
               {/* ACTION 1: Interactive Security Investment Optimizer */}
               <section className="p-6 md:p-8 rounded-xl bg-zinc-900/50 border border-zinc-800 shadow-lg space-y-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1870,7 +1826,7 @@ import ReactMarkdown from 'react-markdown';
                             if (controlFilter === 'deferred') return !c.is_selected;
                             return true;
                           }).map((act, idx) => (
-                            <tr key={act.action_id || idx} className={`hover:bg-zinc-800/50/30 transition-colors ${act.is_selected ? 'bg-emerald-950/10' : 'opacity-70'}`}>
+                            <tr key={act.action_id ? `${act.action_id}-${idx}` : idx} className={`hover:bg-zinc-800/50/30 transition-colors ${act.is_selected ? 'bg-emerald-950/10' : 'opacity-70'}`}>
                               <td className="px-3 py-3 text-center font-mono font-medium text-xs text-zinc-300">
                                 #{act.rank || (idx + 1)}
                               </td>
@@ -2025,7 +1981,7 @@ import ReactMarkdown from 'react-markdown';
                     ) : (
                       findings.map((f) => (
                         <tr
-                          key={f.finding_id}
+                          key={f.id}
                           onClick={() => handleOpenDrilldown('finding', f.finding_id, f)}
                           className="hover:bg-indigo-950/30 cursor-pointer transition-colors group"
                           title="Click to open slide-over drill-down detail"

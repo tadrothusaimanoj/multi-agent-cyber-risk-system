@@ -6,3 +6,9 @@ cyberguard.db
 tsconfig.tsbuildinfo
 .pytest_cache/
 .env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+out/
+*.bak

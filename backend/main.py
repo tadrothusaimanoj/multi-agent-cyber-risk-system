@@ -22,6 +22,7 @@ from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -99,20 +100,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/", include_in_schema=False)
-async def serve_api_root():
-    """Root endpoint for the CyberGuard AI API."""
-    return JSONResponse(
-        content={
-            "message": "CyberGuard AI API is operational. Visit /docs for Swagger specifications.",
-            "endpoints": ["/risk-summary", "/optimize", "/findings", "/assets", "/frameworks"]
-        }
-    )
-
-
-@app.get("/health", tags=["System"])
-def health_check(db: Session = Depends(get_db)):
-    """System health check endpoint."""
+@app.get("/api/health", tags=["System"])
+def api_health_check(db: Session = Depends(get_db)):
+    """System health check endpoint (moved from /health for consistency)."""
     try:
         asset_count = db.query(AssetModel).count()
         return {
@@ -126,6 +116,14 @@ def health_check(db: Session = Depends(get_db)):
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"Database unreachable: {str(e)}"
         )
+
+
+@app.get("/health", tags=["System"])
+def health_check(db: Session = Depends(get_db)):
+    return api_health_check(db)
+
+
+# (Note: Static files must be mounted at the end to avoid intercepting all routes)
 
 
 @app.get("/risk-summary", response_model=RiskSummaryResponse, tags=["Risk Quantification"])
@@ -778,5 +776,19 @@ def get_drilldown_generic(entity_type: str, entity_id: str, db: Session = Depend
             detail=f"Unsupported entity type '{entity_type}'. Supported: 'finding', 'risk_calc'."
         )
 
+# ==========================================
+# FRONTEND MOUNTING
+# ==========================================
 
-
+if os.path.exists("out"):
+    app.mount("/", StaticFiles(directory="out", html=True), name="static")
+else:
+    @app.get("/", include_in_schema=False)
+    async def serve_api_root():
+        """Root endpoint for the CyberGuard AI API."""
+        return JSONResponse(
+            content={
+                "message": "CyberGuard AI API is operational. Visit /docs for Swagger specifications.",
+                "endpoints": ["/risk-summary", "/optimize", "/findings", "/assets", "/frameworks"]
+            }
+        )
