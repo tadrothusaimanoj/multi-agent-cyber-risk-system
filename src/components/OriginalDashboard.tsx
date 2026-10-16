@@ -3,9 +3,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Chart from 'chart.js/auto';
-import { Brain, MessageSquare, Search, Scale, Database, RefreshCw, Zap } from 'lucide-react';
+import { Brain, MessageSquare, Search, Scale, Database, RefreshCw, Zap, Menu, X, House, LayoutDashboard, SlidersHorizontal, ShieldAlert, FileText, Calculator, ClipboardCheck, History, Map, FlaskConical } from 'lucide-react';
 import ComplianceGapModule from './ComplianceGapModule';
 import ReactMarkdown from 'react-markdown';
+import AdvisorAvatar from './AdvisorAvatar';
+import { SidebarNav } from './ui/sidebar-nav';
 
 
 
@@ -55,7 +57,39 @@ import ReactMarkdown from 'react-markdown';
       const [budget, setBudget] = useState(50000);
       const [budgetInput, setBudgetInput] = useState("50000");
       const [strategy, setStrategy] = useState("pulp");
-      const [activeTab, setActiveTab] = useState("dashboard"); // dashboard, findings, ingest, report
+      const [activeTab, setActiveTab] = useState("dashboard");
+      const [navOpen, setNavOpen] = useState(false);
+      const toggleBtnRef = useRef(null);
+      const panelRef = useRef(null);
+
+      useEffect(() => {
+        if (!navOpen) return;
+        const handleKeyDown = (e) => {
+          if (e.key === 'Escape') {
+            setNavOpen(false);
+            toggleBtnRef.current?.focus();
+          }
+        };
+        const handleClickOutside = (e) => {
+          if (
+            panelRef.current && !panelRef.current.contains(e.target) &&
+            toggleBtnRef.current && !toggleBtnRef.current.contains(e.target)
+          ) {
+            setNavOpen(false);
+          }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('mousedown', handleClickOutside);
+        
+        const activeItem = document.querySelector('#nav-container a[aria-current="page"]');
+        if (activeItem) activeItem.focus();
+        else document.querySelector('#nav-container a')?.focus();
+        
+        return () => {
+          document.removeEventListener('keydown', handleKeyDown);
+          document.removeEventListener('mousedown', handleClickOutside);
+        };
+      }, [navOpen]);
       
       // Findings Filter States
       const [severityFilter, setSeverityFilter] = useState("all");
@@ -1143,8 +1177,40 @@ import ReactMarkdown from 'react-markdown';
         });
       }, [scenarioResult, activeTab]);
 
+      const navSections = [
+        {
+          items: [
+            { label: 'Home', href: 'home', icon: House },
+            { label: 'Executive Dashboard', href: 'dashboard', icon: LayoutDashboard },
+            { label: 'Security Investment Optimizer', href: 'optimizer', icon: SlidersHorizontal },
+            { label: 'Findings Explorer', href: 'findings', icon: ShieldAlert, count: findings.length > 0 ? findings.length : undefined },
+          ]
+        },
+        {
+          title: 'Reporting & Risk',
+          items: [
+            { label: 'Board Executive Report', href: 'report', icon: FileText },
+            { label: 'Risk Calculator', href: 'risk-calc', icon: Calculator },
+            { label: 'Compliance Gap', href: 'compliance', icon: ClipboardCheck },
+          ]
+        },
+        {
+          title: 'Governance & Planning',
+          items: [
+            { label: 'Audit Trail', href: 'audit', icon: History },
+            { label: 'Policy Mapper', href: 'policy', icon: Map },
+            { label: 'Scenario Analysis', href: 'scenarios', icon: FlaskConical }
+          ]
+        }
+      ];
+
       return (
-        <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+        <div className="min-h-screen flex flex-col">
+
+
+          {/* Main Content */}
+          <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 min-w-0 space-y-8 relative">
+            
           {/* Toast Notification Banner */}
           {toast && (
             <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg border flex items-center gap-3 transition-all duration-300 ${
@@ -1164,6 +1230,72 @@ import ReactMarkdown from 'react-markdown';
           {/* Header */}
           <header className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-zinc-800 pb-6 gap-4">
             <div className="flex items-center gap-3">
+              <div className="relative flex items-center shrink-0">
+                <button
+                  id="nav-toggle-btn"
+                  ref={toggleBtnRef}
+                  type="button"
+                  aria-expanded={navOpen}
+                  aria-controls="nav-container"
+                  aria-label={navOpen ? "Close navigation" : "Open navigation"}
+                  onClick={() => setNavOpen(!navOpen)}
+                  className="flex items-center justify-center w-10 h-10 shrink-0 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 transition-colors"
+                >
+                  <span className="sr-only">{navOpen ? "Close navigation" : "Open navigation"}</span>
+                  <div className="relative w-4 h-4 flex flex-col justify-center items-center">
+                    <span className={`absolute h-0.5 w-4 bg-zinc-400 transition-[opacity,transform] duration-150 motion-reduce:transition-none ${navOpen ? 'rotate-45 translate-y-0' : '-translate-y-1.5'}`} />
+                    <span className={`absolute h-0.5 w-4 bg-zinc-400 transition-[opacity,transform] duration-150 motion-reduce:transition-none ${navOpen ? 'opacity-0' : 'opacity-100'}`} />
+                    <span className={`absolute h-0.5 w-4 bg-zinc-400 transition-[opacity,transform] duration-150 motion-reduce:transition-none ${navOpen ? '-rotate-45 translate-y-0' : 'translate-y-1.5'}`} />
+                  </div>
+                </button>
+                {/* Navigation Dropdown Panel */}
+                <div 
+                  id="nav-container"
+                  ref={panelRef}
+                  className={`absolute left-0 top-full mt-2 z-50 origin-top-left motion-reduce:transition-none ${
+                    navOpen 
+                      ? 'opacity-100 translate-y-0 scale-100 visible transition-[opacity,transform,visibility] duration-[180ms] ease-out' 
+                      : 'opacity-0 -translate-y-[6px] scale-98 invisible pointer-events-none transition-[opacity,transform,visibility] duration-[120ms] ease-in'
+                  }`}
+                  inert={!navOpen ? true : undefined}
+                >
+                  <div className="bg-zinc-900 border border-zinc-800 w-[280px] max-w-[85vw] p-3 rounded-xl shadow-xl shadow-black/40 overflow-y-auto max-h-[calc(100vh-6rem)] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-zinc-700 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+                    <div className="flex h-[56px] items-center justify-between px-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="size-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-medium shadow-sm border border-zinc-800">
+                          CG
+                        </div>
+                        <span className="text-base font-semibold text-zinc-100">CyberGuard AI</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNavOpen(false);
+                          toggleBtnRef.current?.focus();
+                        }}
+                        className="flex items-center justify-center size-8 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+                        aria-label="Close navigation"
+                      >
+                        <X className="size-5" />
+                      </button>
+                    </div>
+                    <SidebarNav 
+                      sections={navSections} 
+                      activeHref={activeTab} 
+                      onSelect={(item, e) => { 
+                        e.preventDefault(); 
+                        if (item.href === 'home') {
+                          setActiveTab('dashboard');
+                        } else {
+                          setActiveTab(item.href); 
+                        }
+                        setNavOpen(false);
+                        toggleBtnRef.current?.focus();
+                      }} 
+                    />
+                  </div>
+                </div>
+              </div>
               <div className="w-11 h-11 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-white font-medium text-xl shadow-sm border border-zinc-800">
                 CG
               </div>
@@ -1196,32 +1328,6 @@ import ReactMarkdown from 'react-markdown';
             </div>
           </header>
 
-          {/* Navigation Tabs */}
-          <nav className="flex flex-wrap gap-1 border-b border-zinc-800 pb-2">
-            {[
-              { id: 'dashboard', label: 'Executive Dashboard' },
-              { id: 'optimizer', label: 'Security Investment Optimizer' },
-              { id: 'findings', label: `Findings Explorer (${findings.length})` },
-              { id: 'report', label: 'Board Executive Report' },
-              { id: 'risk-calc', label: 'Risk Calculator' },
-              { id: 'compliance', label: 'Compliance Gap' },
-              { id: 'audit', label: 'Audit Trail' },
-              { id: 'policy', label: 'Policy Mapper' },
-              { id: 'scenarios', label: 'Scenario Analysis' }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all ${
-                  activeTab === tab.id
-                    ? 'bg-indigo-600 text-white text-zinc-950 shadow-md font-medium'
-                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
 
           {/* Tab 1: Executive Dashboard View */}
           {(activeTab === 'dashboard') && (
@@ -1231,7 +1337,11 @@ import ReactMarkdown from 'react-markdown';
                 <div className="p-6 rounded-xl bg-zinc-900 border border-zinc-800 shadow-md relative overflow-hidden">
                   <p className="text-xs font-semibold text-rose-300 uppercase tracking-wider mb-1">Total Quantified Risk</p>
                   <div className="text-3xl sm:text-4xl font-medium font-mono tracking-tight text-rose-400">
-                    {formatCurrency(summary?.total_quantified_risk || 0)}
+                    {summary?.total_findings === 0 || findings.length === 0 ? (
+                      <span className="text-xl text-zinc-500 font-sans">No data yet</span>
+                    ) : (
+                      formatCurrency(summary?.total_quantified_risk || 0)
+                    )}
                   </div>
                   <p className="text-xs text-zinc-400 mt-2">Annualized dollar loss (Threat × Vuln × Asset Value)</p>
                 </div>
@@ -1261,9 +1371,7 @@ import ReactMarkdown from 'react-markdown';
               <section className="p-6 md:p-8 rounded-xl bg-zinc-900/50 border border-zinc-800 shadow-lg space-y-5">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 border border-zinc-800 flex items-center justify-center text-indigo-300 font-medium text-xl">
-                      <Brain className="w-5 h-5 text-indigo-400" />
-                    </div>
+                    <AdvisorAvatar type="droid" size={56} busy={loadingOpt} />
                     <div>
                       <div className="flex items-center gap-2">
                         <h2 className="text-xl font-medium text-white">Dynamic Executive Risk Advisor</h2>
@@ -1403,9 +1511,7 @@ import ReactMarkdown from 'react-markdown';
               <section className="p-6 md:p-8 rounded-xl bg-zinc-900/50 border border-zinc-800 shadow-lg space-y-5">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-zinc-800">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 border border-zinc-800 flex items-center justify-center text-indigo-300 text-xl font-medium">
-                      <MessageSquare className="w-5 h-5 text-indigo-400" />
-                    </div>
+                    <AdvisorAvatar type="mech" size={56} busy={loadingQuery} />
                     <div>
                       <h2 className="text-xl font-medium text-white flex items-center gap-2">
                         Executive AI Risk Advisor
@@ -1465,7 +1571,7 @@ import ReactMarkdown from 'react-markdown';
                             {msg.sender === 'assistant' && (
                               <div className="flex items-center justify-between gap-2 pb-2 border-b border-zinc-800 text-xs text-zinc-400">
                                 <span className="font-semibold text-indigo-300 flex items-center gap-1.5">
-                                  <span>🤖</span> CyberGuard AI Advisor
+                                  <AdvisorAvatar type="mech" size={32} busy={false} /> CyberGuard AI Advisor
                                 </span>
                                 {msg.provenance && (
                                   <span className="font-mono text-[10px] text-zinc-400">
@@ -3171,6 +3277,7 @@ import ReactMarkdown from 'react-markdown';
           <footer className="border-t border-zinc-800 pt-6 text-center text-xs text-zinc-500">
             CyberGuard AI Platform — Continuous Cyber Risk Quantification & Investment Optimization
           </footer>
+          </div>
         </div>
       );
     }

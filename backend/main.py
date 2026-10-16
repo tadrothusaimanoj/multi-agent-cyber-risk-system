@@ -76,11 +76,17 @@ from backend.grc_engine import (
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize database and seed synthetic dataset if empty on startup."""
+    os.makedirs("./data", exist_ok=True)
     init_db()
     with SessionLocal() as db:
         asset_count = db.query(AssetModel).count()
-        if asset_count == 0:
+        finding_count = db.query(FindingModel).count()
+        if asset_count == 0 or finding_count == 0:
             generate_synthetic_data(db)
+            
+            # Pass 2 happens intrinsically during generate_synthetic_data via ML prioritization and FAIR risk calc.
+            # But let's trigger an initial optimization run to cache it if necessary, though it evaluates lazily.
+            # We skip anything already done to make restarts safe.
     yield
 
 
@@ -105,11 +111,15 @@ def api_health_check(db: Session = Depends(get_db)):
     """System health check endpoint (moved from /health for consistency)."""
     try:
         asset_count = db.query(AssetModel).count()
+        finding_count = db.query(FindingModel).count()
+        total_risk = db.query(func.sum(FindingModel.quantified_risk_usd)).scalar() or 0.0
         return {
             "status": "healthy",
             "version": settings.VERSION,
             "database": "connected",
-            "assets_registered": asset_count
+            "assets_registered": asset_count,
+            "findings_registered": finding_count,
+            "total_risk": float(total_risk)
         }
     except Exception as e:
         raise HTTPException(

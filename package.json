@@ -11,15 +11,19 @@
     "fullstack": "npm run build && python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000"
   },
   "dependencies": {
+    "bot-avatars": "^0.2.2",
     "chart.js": "^4.5.1",
+    "clsx": "^2.1.1",
     "drizzle-orm": "^0.38.4",
     "lucide-react": "^0.475.0",
+    "motion": "^14.0.0",
     "next": "^15.1.7",
     "pg": "^8.23.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
-    "recharts": "^2.15.1"
+    "recharts": "^2.15.1",
+    "tailwind-merge": "^3.7.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

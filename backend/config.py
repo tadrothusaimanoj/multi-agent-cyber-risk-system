@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     
     # Database configuration (SQLite default, PostgreSQL via DATABASE_URL)
     DATABASE_URL: str = Field(
-        default="sqlite:///./cyberguard.db",
+        default="sqlite:///./data/cyberguard.db",
         alias="DATABASE_URL"
     )
     

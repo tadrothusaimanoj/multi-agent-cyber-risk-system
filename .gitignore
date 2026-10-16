@@ -3,6 +3,8 @@ node_modules/
 __pycache__/
 *.pyc
 cyberguard.db
+*.db
+.vscode/
 tsconfig.tsbuildinfo
 .pytest_cache/
 .env
